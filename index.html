@@ -1,0 +1,833 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Control de Coche</title>
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+
+  <style>
+    :root {
+      --azul:      #1565C0;
+      --azul-dark: #0D47A1;
+      --naranja:   #E65100;
+      --gris:      #757575;
+      --verde:     #2E7D32;
+      --fondo:     #ECEFF1;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+
+    body {
+      background: var(--fondo);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      margin: 0;
+      min-height: 100dvh;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    /* ── Cabecera ── */
+    .app-header {
+      background: linear-gradient(135deg, var(--azul-dark), var(--azul));
+      color: #fff;
+      padding: 14px 16px 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,.25);
+      position: sticky; top: 0; z-index: 100;
+    }
+    .app-header .title    { font-size: 18px; font-weight: 700; line-height: 1.2; }
+    .app-header .subtitle { font-size: 12px; opacity: .8; margin-top: 1px; }
+
+    .day-badge {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 3px 11px; border-radius: 20px;
+      font-size: 12px; font-weight: 600; margin-top: 6px; letter-spacing: .3px;
+    }
+    .day-badge.laboral  { background: rgba(255,255,255,.22); }
+    .day-badge.descanso { background: rgba(255,255,255,.12); opacity: .8; }
+
+    /* ── Nav ── */
+    .app-nav {
+      background: #fff; display: flex;
+      box-shadow: 0 1px 4px rgba(0,0,0,.1);
+      position: sticky; top: 67px; z-index: 99;
+    }
+    .app-nav-btn {
+      flex: 1; background: none; border: none;
+      border-bottom: 3px solid transparent;
+      padding: 10px 0 8px; font-size: 11px; font-weight: 600;
+      color: #888; cursor: pointer;
+      transition: color .2s, border-color .2s; line-height: 1;
+    }
+    .app-nav-btn i      { font-size: 20px; display: block; margin-bottom: 3px; }
+    .app-nav-btn.active { color: var(--azul); border-bottom-color: var(--azul); }
+
+    /* ── Tabs ── */
+    .tab-panel        { display: none; padding: 14px 12px 80px; }
+    .tab-panel.active { display: block; }
+
+    /* ── Cards ── */
+    .card {
+      background: #fff; border-radius: 14px;
+      box-shadow: 0 1px 5px rgba(0,0,0,.09);
+      padding: 14px 16px; margin-bottom: 12px;
+    }
+    .card-title {
+      font-size: 13px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: .5px;
+      color: #555; margin-bottom: 10px;
+    }
+
+    /* ── Suggestion ── */
+    .suggestion-card {
+      background: linear-gradient(135deg, #1976D2, var(--azul-dark));
+      color: #fff; border-radius: 14px;
+      padding: 14px 16px 12px; margin-bottom: 12px;
+      box-shadow: 0 4px 14px rgba(21,101,192,.35);
+    }
+    .suggestion-label { font-size: 11px; opacity: .8; text-transform: uppercase; letter-spacing: .8px; }
+    .suggestion-name  { font-size: 32px; font-weight: 800; letter-spacing: 1px; line-height: 1.1; margin: 2px 0 4px; }
+    .suggestion-sub   { font-size: 12px; opacity: .75; }
+
+    /* ── Attendance ── */
+    .att-row {
+      display: flex; align-items: center; gap: 12px;
+      padding: 9px 0; border-bottom: 1px solid #F5F5F5; cursor: pointer;
+    }
+    .att-row:last-child { border-bottom: none; }
+    .att-row input[type="checkbox"] {
+      width: 22px; height: 22px; accent-color: var(--azul); flex-shrink: 0; cursor: pointer;
+    }
+    .att-label { font-size: 15px; font-weight: 500; cursor: pointer; user-select: none; }
+    .att-tag   { font-size: 11px; color: #888; margin-left: 4px; }
+
+    /* ── Driver buttons ── */
+    .driver-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+    .driver-btn {
+      border: none; border-radius: 14px;
+      padding: 16px 10px 14px; color: #fff;
+      font-size: 17px; font-weight: 800; letter-spacing: .5px;
+      cursor: pointer; display: flex; flex-direction: column;
+      align-items: center; gap: 5px; min-height: 86px; justify-content: center;
+      transition: transform .12s, box-shadow .12s, opacity .2s;
+      -webkit-user-select: none; user-select: none;
+    }
+    .driver-btn:active:not(:disabled) { transform: scale(.95); }
+    .driver-btn:disabled { opacity: .38; cursor: not-allowed; box-shadow: none !important; }
+    .driver-btn.fijo            { background: var(--azul); box-shadow: 0 4px 14px rgba(21,101,192,.4); }
+    .driver-btn.placido-oficial { background: var(--naranja); box-shadow: 0 4px 14px rgba(230,81,0,.4); }
+    .driver-btn.placido-extra   { background: var(--gris); box-shadow: 0 2px 8px rgba(0,0,0,.2); }
+    .driver-btn.suggested       { outline: 3px solid #FFD600; outline-offset: 3px; }
+    .btn-cruces { font-size: 12px; font-weight: 400; opacity: .85; }
+
+    /* ── Ranking ── */
+    .ranking-row {
+      display: flex; align-items: center;
+      padding: 11px 0; border-bottom: 1px solid #F5F5F5; gap: 10px;
+    }
+    .ranking-row:last-child { border-bottom: none; }
+    .rank-pos    { width: 28px; font-size: 18px; flex-shrink: 0; }
+    .rank-info   { flex: 1; min-width: 0; }
+    .rank-name   { font-weight: 700; font-size: 15px; }
+    .rank-bar-wrap { margin-top: 5px; background: #EEE; border-radius: 4px; height: 7px; overflow: hidden; }
+    .rank-bar    { height: 100%; background: var(--azul); border-radius: 4px; transition: width .5s ease; }
+    .rank-count  { font-size: 26px; font-weight: 800; color: var(--azul); flex-shrink: 0; min-width: 36px; text-align: right; }
+    .badge-hoy   { font-size: 9px; font-weight: 700; background: #FFD600; color: #333; padding: 1px 5px; border-radius: 6px; vertical-align: middle; margin-left: 4px; }
+
+    /* ── History ── */
+    .history-row {
+      display: flex; align-items: flex-start; gap: 10px;
+      padding: 10px 0; border-bottom: 1px solid #F5F5F5;
+    }
+    .history-row:last-child { border-bottom: none; }
+    .history-icon { font-size: 20px; color: var(--azul); flex-shrink: 0; margin-top: 1px; }
+    .history-cond { font-weight: 700; font-size: 15px; }
+    .history-meta { font-size: 12px; color: #888; margin-top: 1px; }
+
+    /* ── Rest Day ── */
+    .rest-screen { text-align: center; padding: 50px 20px 20px; color: #999; }
+    .rest-emoji  { font-size: 72px; line-height: 1; }
+    .rest-title  { font-size: 20px; font-weight: 700; color: #555; margin-top: 12px; }
+    .rest-sub    { font-size: 14px; margin-top: 4px; }
+
+    /* ── Toast ── */
+    .toast-wrap {
+      position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%);
+      z-index: 9999; pointer-events: none;
+    }
+    .toast-msg {
+      background: #323232; color: #fff;
+      padding: 11px 22px; border-radius: 24px;
+      font-size: 14px; font-weight: 500;
+      box-shadow: 0 4px 14px rgba(0,0,0,.3);
+      white-space: nowrap; opacity: 0; transition: opacity .25s;
+    }
+    .toast-msg.show { opacity: 1; }
+    .toast-msg.ok   { background: var(--verde); }
+    .toast-msg.err  { background: #C62828; }
+
+    /* ── Loading ── */
+    .loading-overlay {
+      position: fixed; inset: 0;
+      background: rgba(236,239,241,.9);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 12px; z-index: 9000;
+    }
+    .loading-overlay p { font-size: 14px; color: #666; margin: 0; }
+    .spinner {
+      width: 40px; height: 40px; border-radius: 50%;
+      border: 4px solid #DDD; border-top-color: var(--azul);
+      animation: spin .7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Modals ── */
+    .modal-backdrop-custom {
+      position: fixed; inset: 0; background: rgba(0,0,0,.45);
+      z-index: 8000; display: flex; align-items: flex-end;
+      justify-content: center; padding-bottom: 20px;
+    }
+    .modal-sheet {
+      background: #fff; border-radius: 20px 20px 16px 16px;
+      padding: 20px 20px 16px; width: min(400px, 95vw);
+      box-shadow: 0 -4px 24px rgba(0,0,0,.2);
+      animation: slideUp .25s ease;
+    }
+    @keyframes slideUp { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+    .modal-sheet-title { font-size: 17px; font-weight: 700; margin-bottom: 8px; }
+    .modal-sheet-text  { font-size: 15px; color: #444; margin-bottom: 18px; line-height: 1.4; }
+    .modal-sheet-btns  { display: flex; gap: 10px; }
+    .modal-sheet-btns button {
+      flex: 1; padding: 12px; border-radius: 12px;
+      font-size: 15px; font-weight: 600; border: none; cursor: pointer;
+    }
+    .btn-cancel  { background: #EEE; color: #333; }
+    .btn-confirm { background: var(--azul); color: #fff; }
+
+    /* ── Histórico ── */
+    .hist-input-row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 11px 0; border-bottom: 1px solid #F5F5F5;
+    }
+    .hist-input-row:last-child { border-bottom: none; }
+    .hist-nombre { font-size: 16px; font-weight: 600; }
+    .hist-input {
+      width: 72px; text-align: center; font-size: 20px; font-weight: 700;
+      border: 2px solid #DDD; border-radius: 10px; padding: 5px 8px;
+      color: var(--azul); -moz-appearance: textfield;
+    }
+    .hist-input::-webkit-outer-spin-button,
+    .hist-input::-webkit-inner-spin-button { -webkit-appearance: none; }
+    .hist-input:focus { border-color: var(--azul); outline: none; }
+    .hist-stepper {
+      background: #EEE; border: none; border-radius: 8px;
+      width: 34px; height: 34px; font-size: 22px; line-height: 1;
+      cursor: pointer; color: #444;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .hist-stepper:active { background: #DDD; }
+    .hist-link-btn {
+      background: none; border: none; color: #999; font-size: 13px;
+      cursor: pointer; padding: 6px 0;
+      text-decoration: underline; text-decoration-style: dotted;
+    }
+    .hist-link-btn:hover { color: var(--azul); }
+
+    @media (max-width: 360px) {
+      .driver-btn { font-size: 15px; min-height: 78px; }
+      .suggestion-name { font-size: 27px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- LOADING -->
+<div id="loadingOverlay" class="loading-overlay">
+  <div class="spinner"></div>
+  <p>Cargando datos…</p>
+</div>
+
+<!-- CABECERA -->
+<header class="app-header">
+  <div style="display:flex;align-items:center;gap:10px">
+    <i class="bi bi-car-front-fill" style="font-size:24px"></i>
+    <div>
+      <div class="title">Control de Coche</div>
+      <div id="hdrFecha" class="subtitle">—</div>
+    </div>
+  </div>
+  <div id="hdrBadge" class="day-badge laboral" style="display:inline-flex">
+    <i class="bi bi-circle-fill" style="font-size:7px"></i>
+    <span id="hdrBadgeText">…</span>
+  </div>
+</header>
+
+<!-- NAV -->
+<nav class="app-nav">
+  <button class="app-nav-btn active" data-tab="tabRegistro" onclick="switchTab('tabRegistro')">
+    <i class="bi bi-plus-circle-fill"></i>Registro
+  </button>
+  <button class="app-nav-btn" data-tab="tabStats" onclick="switchTab('tabStats')">
+    <i class="bi bi-bar-chart-fill"></i>Estadísticas
+  </button>
+  <button class="app-nav-btn" data-tab="tabHistorial" onclick="switchTab('tabHistorial')">
+    <i class="bi bi-clock-history"></i>Historial
+  </button>
+</nav>
+
+<!-- TAB: REGISTRO -->
+<div id="tabRegistro" class="tab-panel active">
+  <div id="restScreen" class="rest-screen" style="display:none">
+    <div class="rest-emoji">😴</div>
+    <div class="rest-title">Día de Descanso</div>
+    <div class="rest-sub">No hay turno hoy. ¡A descansar!</div>
+    <button style="margin-top:20px;padding:10px 24px;border-radius:12px;border:2px solid #CCC;background:none;font-size:14px;cursor:pointer" onclick="switchTab('tabStats')">
+      Ver Estadísticas
+    </button>
+  </div>
+  <div id="workScreen">
+    <div id="suggCard" class="suggestion-card" style="display:none">
+      <div class="suggestion-label"><i class="bi bi-lightbulb-fill me-1"></i>Sugerencia de hoy</div>
+      <div id="suggName" class="suggestion-name">—</div>
+      <div class="suggestion-sub">Tiene menos cruces acumuladas</div>
+    </div>
+    <div class="card">
+      <div class="card-title"><i class="bi bi-people-fill"></i> ¿Quién ha venido hoy?</div>
+      <div id="attList"></div>
+    </div>
+    <div class="card">
+      <div class="card-title"><i class="bi bi-hand-index-thumb-fill"></i> Registrar viaje (+1 cruz)</div>
+      <div id="driverGrid" class="driver-grid"></div>
+    </div>
+  </div>
+</div>
+
+<!-- TAB: ESTADÍSTICAS -->
+<div id="tabStats" class="tab-panel">
+  <div class="card">
+    <div class="card-title"><i class="bi bi-trophy-fill" style="color:#FFB300"></i> Ranking de Cruces</div>
+    <div id="rankingList"></div>
+  </div>
+  <div style="text-align:center;padding:4px 0 8px">
+    <button class="hist-link-btn" onclick="openHistModal()">
+      <i class="bi bi-pencil-square"></i> Editar datos previos a la app
+    </button>
+  </div>
+</div>
+
+<!-- TAB: HISTORIAL -->
+<div id="tabHistorial" class="tab-panel">
+  <div class="card">
+    <div class="card-title"><i class="bi bi-clock-history"></i> Últimos 10 viajes</div>
+    <div id="historyList"></div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast-wrap">
+  <div id="toastMsg" class="toast-msg"></div>
+</div>
+
+<!-- MODAL: CONFIRMACIÓN -->
+<div id="modalBackdrop" class="modal-backdrop-custom" style="display:none" onclick="closeModal(event)">
+  <div class="modal-sheet" onclick="event.stopPropagation()">
+    <div class="modal-sheet-title">Confirmar viaje</div>
+    <div id="modalText" class="modal-sheet-text"></div>
+    <div class="modal-sheet-btns">
+      <button class="btn-cancel"  onclick="closeModal()">Cancelar</button>
+      <button class="btn-confirm" id="modalConfirmBtn">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: HISTÓRICO -->
+<div id="histModalBackdrop" class="modal-backdrop-custom" style="display:none;align-items:center" onclick="closeHistModal(event)">
+  <div class="modal-sheet" onclick="event.stopPropagation()" style="max-height:90dvh;overflow-y:auto">
+    <div class="modal-sheet-title"><i class="bi bi-clock-history"></i> Ajuste previo a la app</div>
+    <p style="font-size:13px;color:#666;margin-bottom:14px;line-height:1.45">
+      Introduce el total de veces que cada uno llevó el coche <strong>antes</strong> de empezar a usar la app.
+    </p>
+    <div id="histInputs"></div>
+    <p id="histWarning" style="font-size:12px;color:var(--naranja);margin-top:10px;padding:8px 10px;background:#FFF3E0;border-radius:8px;display:none">
+      ⚠️ Guardar reemplazará el ajuste anterior. Los viajes reales no se tocan.
+    </p>
+    <div class="modal-sheet-btns" style="margin-top:16px">
+      <button class="btn-cancel"  onclick="closeHistModal()">Cancelar</button>
+      <button class="btn-confirm" onclick="saveHistData()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- SUPABASE -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script>
+// ═══════════════════════════════════════════════
+//  CONFIGURACIÓN — rellena con tus datos Supabase
+// ═══════════════════════════════════════════════
+const SUPABASE_URL = 'https://bqhxoxzjmadbddugmxcd.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_H4Ihzfe7Vt7NBf8P9CrQAw_XXC_lOQV';
+
+const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// ═══════════════════════════════════════════════
+//  CONSTANTES
+// ═══════════════════════════════════════════════
+const CONDUCTORES  = ['Miguel', 'Boro', 'Francis', 'Plácido'];
+const FIJOS        = ['Miguel', 'Boro', 'Francis'];
+const DIAS_SEMANA  = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+const MESES        = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+
+// ═══════════════════════════════════════════════
+//  ESTADO
+// ═══════════════════════════════════════════════
+let state = { dayInfo: null, stats: null, attendance: {} };
+
+// ═══════════════════════════════════════════════
+//  LÓGICA DE CICLO (todo cliente, sin servidor)
+// ═══════════════════════════════════════════════
+function getCyclePos(date) {
+  const seed = new Date(2026, 3, 7); seed.setHours(0,0,0,0);
+  const d    = new Date(date);       d.setHours(0,0,0,0);
+  const diff = Math.floor((d - seed) / 86400000);
+  return ((diff % 8) + 8) % 8;
+}
+
+function getDayInfo(date = new Date()) {
+  const pos = getCyclePos(date);
+  const fechaStr = `${DIAS_SEMANA[date.getDay()]}, ${date.getDate()} de ${MESES[date.getMonth()]} de ${date.getFullYear()}`;
+  // ISO date como string local (evita desfases de UTC)
+  const fechaISO = `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
+
+  let diaCiclo, esLaboral, conductoresHoy, esPlacidoOficial;
+  switch (pos) {
+    case 0: diaCiclo=1; esLaboral=true; conductoresHoy=[...FIJOS]; esPlacidoOficial=false; break;
+    case 1: diaCiclo=2; esLaboral=true; conductoresHoy=[...CONDUCTORES]; esPlacidoOficial=true; break;
+    case 2: diaCiclo=3; esLaboral=true; conductoresHoy=[...FIJOS]; esPlacidoOficial=false; break;
+    default: diaCiclo='Descanso'; esLaboral=false; conductoresHoy=[]; esPlacidoOficial=false;
+  }
+  return { fechaStr, fechaISO, diaCiclo, esLaboral, conductoresHoy, esPlacidoOficial };
+}
+
+// ═══════════════════════════════════════════════
+//  DATOS — Supabase
+// ═══════════════════════════════════════════════
+async function loadViajes() {
+  const { data, error } = await db
+    .from('viajes')
+    .select('*')
+    .order('fecha', { ascending: true })
+    .order('created_at', { ascending: true });
+  if (error) throw error;
+  return data || [];
+}
+
+async function insertViaje(conductor, asistentes, dayInfo) {
+  const { error } = await db.from('viajes').insert({
+    fecha:      dayInfo.fechaISO,
+    dia_ciclo:  String(dayInfo.diaCiclo),
+    conductor,
+    asistentes: asistentes.join(', '),
+    cruces:     1
+  });
+  if (error) throw error;
+}
+
+// ═══════════════════════════════════════════════
+//  ESTADÍSTICAS (computadas en cliente)
+// ═══════════════════════════════════════════════
+function computeStats(viajes, dayInfo) {
+  const cruces = {}, ultimaFecha = {};
+  CONDUCTORES.forEach(c => { cruces[c] = 0; ultimaFecha[c] = null; });
+
+  viajes.forEach(v => {
+    if (!v.conductor || !cruces.hasOwnProperty(v.conductor)) return;
+    cruces[v.conductor] += (v.cruces || 1);
+    // La fecha de "última vez" solo aplica a viajes reales, no a ajustes batch
+    if (v.asistentes !== 'Previo a la app') {
+      if (!ultimaFecha[v.conductor] || v.fecha > ultimaFecha[v.conductor]) {
+        ultimaFecha[v.conductor] = v.fecha;
+      }
+    }
+  });
+
+  const ranking = CONDUCTORES
+    .map(n => ({ nombre: n, cruces: cruces[n], ultimaFecha: ultimaFecha[n] }))
+    .sort((a, b) => {
+      if (b.cruces !== a.cruces) return b.cruces - a.cruces;
+      if (!a.ultimaFecha && !b.ultimaFecha) return 0;
+      if (!a.ultimaFecha) return 1;
+      if (!b.ultimaFecha) return -1;
+      return b.ultimaFecha.localeCompare(a.ultimaFecha);
+    });
+
+  // Historial: 10 más recientes (excluye los ajustes batch "Previo a la app")
+  const history = viajes
+    .filter(v => v.asistentes !== 'Previo a la app')
+    .slice(-10)
+    .reverse();
+
+  // Sugerencia entre los presentes hoy
+  let sugerido = null;
+  if (dayInfo.esLaboral) {
+    sugerido = dayInfo.conductoresHoy
+      .map(n => ({ nombre: n, cruces: cruces[n], ultimaFecha: ultimaFecha[n] }))
+      .sort((a, b) => {
+        if (a.cruces !== b.cruces) return a.cruces - b.cruces;
+        if (!a.ultimaFecha && !b.ultimaFecha) return 0;
+        if (!a.ultimaFecha) return -1;
+        if (!b.ultimaFecha) return 1;
+        return a.ultimaFecha.localeCompare(b.ultimaFecha);
+      })[0]?.nombre ?? null;
+  }
+
+  return { ranking, history, sugerido, cruces };
+}
+
+// ═══════════════════════════════════════════════
+//  INICIO
+// ═══════════════════════════════════════════════
+async function init() {
+  try {
+    const dayInfo = getDayInfo();
+    state.dayInfo = dayInfo;
+    renderHeader(dayInfo);
+    renderRegistro(dayInfo);
+
+    const viajes = await loadViajes();
+    const stats  = computeStats(viajes, dayInfo);
+    state.stats  = stats;
+
+    renderStats(stats);
+    renderHistory(stats.history);
+    updateDriverCruces();
+    updateSuggestion();
+  } catch (err) {
+    console.error(err);
+    showToast('Error al conectar con la base de datos', 'err');
+  } finally {
+    document.getElementById('loadingOverlay').style.display = 'none';
+  }
+}
+
+async function reloadData() {
+  try {
+    document.getElementById('loadingOverlay').style.display = 'flex';
+    const viajes = await loadViajes();
+    const stats  = computeStats(viajes, state.dayInfo);
+    state.stats  = stats;
+    renderStats(stats);
+    renderHistory(stats.history);
+    updateDriverCruces();
+    updateSuggestion();
+  } catch (err) {
+    showToast('Error al actualizar datos', 'err');
+  } finally {
+    document.getElementById('loadingOverlay').style.display = 'none';
+  }
+}
+
+// ═══════════════════════════════════════════════
+//  RENDER: CABECERA
+// ═══════════════════════════════════════════════
+function renderHeader(d) {
+  document.getElementById('hdrFecha').textContent = d.fechaStr;
+  const badge = document.getElementById('hdrBadge');
+  const text  = document.getElementById('hdrBadgeText');
+  if (d.esLaboral) {
+    text.textContent = `Día ${d.diaCiclo} de trabajo`;
+    badge.className  = 'day-badge laboral';
+  } else {
+    text.textContent = 'Día de Descanso';
+    badge.className  = 'day-badge descanso';
+  }
+}
+
+// ═══════════════════════════════════════════════
+//  RENDER: REGISTRO
+// ═══════════════════════════════════════════════
+function renderRegistro(d) {
+  if (!d.esLaboral) {
+    document.getElementById('restScreen').style.display = 'block';
+    document.getElementById('workScreen').style.display = 'none';
+    return;
+  }
+  document.getElementById('restScreen').style.display = 'none';
+  document.getElementById('workScreen').style.display = 'block';
+  renderAttendance(d);
+  renderDriverButtons(d);
+}
+
+function renderAttendance(d) {
+  const cont = document.getElementById('attList');
+  cont.innerHTML = '';
+  CONDUCTORES.forEach(nombre => {
+    const esEsperado  = d.conductoresHoy.includes(nombre);
+    const esPlacExtra = nombre === 'Plácido' && !d.esPlacidoOficial;
+    state.attendance[nombre] = esEsperado;
+
+    const row = document.createElement('label');
+    row.className = 'att-row';
+    row.innerHTML = `
+      <input type="checkbox" id="att_${nombre}" ${esEsperado ? 'checked' : ''}
+             onchange="onAttChange('${nombre}', this.checked)">
+      <span class="att-label">${nombre}${esPlacExtra ? ' <span class="att-tag">(día extra)</span>' : ''}</span>
+    `;
+    cont.appendChild(row);
+  });
+}
+
+function onAttChange(nombre, presente) {
+  state.attendance[nombre] = presente;
+  const btn = document.getElementById(`dBtn_${nombre}`);
+  if (btn) btn.disabled = !presente;
+  updateSuggestion();
+}
+
+function renderDriverButtons(d) {
+  const grid = document.getElementById('driverGrid');
+  grid.innerHTML = '';
+  CONDUCTORES.forEach(nombre => {
+    let cls = 'driver-btn ';
+    if (nombre === 'Plácido') cls += d.esPlacidoOficial ? 'placido-oficial' : 'placido-extra';
+    else cls += 'fijo';
+
+    const col = document.createElement('div');
+    col.innerHTML = `
+      <button id="dBtn_${nombre}" class="${cls}" ${!state.attendance[nombre] ? 'disabled' : ''}
+              onclick="onDriverClick('${nombre}')">
+        <span>${nombre.toUpperCase()}</span>
+        <span class="btn-cruces" id="cru_${nombre}">…</span>
+      </button>
+    `;
+    grid.appendChild(col);
+  });
+}
+
+function updateDriverCruces() {
+  if (!state.stats) return;
+  state.stats.ranking.forEach(item => {
+    const el = document.getElementById(`cru_${item.nombre}`);
+    if (el) el.textContent = `${item.cruces} ${item.cruces === 1 ? 'cruz' : 'cruces'}`;
+  });
+  updateSuggestion();
+}
+
+function updateSuggestion() {
+  if (!state.stats || !state.dayInfo?.esLaboral) return;
+  CONDUCTORES.forEach(n => {
+    const b = document.getElementById(`dBtn_${n}`);
+    if (b) b.classList.remove('suggested');
+  });
+  const presentes = state.dayInfo.conductoresHoy.filter(n => state.attendance[n]);
+  if (!presentes.length) { document.getElementById('suggCard').style.display = 'none'; return; }
+
+  const rankMap = {};
+  state.stats.ranking.forEach(r => { rankMap[r.nombre] = r.cruces; });
+  const sugerido = [...presentes].sort((a,b) => (rankMap[a]||0) - (rankMap[b]||0))[0];
+
+  document.getElementById('suggCard').style.display = 'block';
+  document.getElementById('suggName').textContent   = sugerido.toUpperCase();
+  const btn = document.getElementById(`dBtn_${sugerido}`);
+  if (btn && !btn.disabled) btn.classList.add('suggested');
+}
+
+// ═══════════════════════════════════════════════
+//  REGISTRAR VIAJE
+// ═══════════════════════════════════════════════
+function onDriverClick(nombre) {
+  const cruces  = state.stats?.cruces?.[nombre] ?? 0;
+  const despues = cruces + 1;
+  document.getElementById('modalText').innerHTML =
+    `¿Registrar <strong>1 cruz</strong> para <strong>${nombre}</strong>?<br>` +
+    `<small style="color:#888">Acumulado: ${despues} ${despues===1?'cruz':'cruces'}</small>`;
+  document.getElementById('modalConfirmBtn').onclick = () => { closeModal(); doRegister(nombre); };
+  document.getElementById('modalBackdrop').style.display = 'flex';
+}
+
+function closeModal(evt) {
+  if (!evt || evt.target === document.getElementById('modalBackdrop'))
+    document.getElementById('modalBackdrop').style.display = 'none';
+}
+
+async function doRegister(conductor) {
+  document.getElementById('loadingOverlay').style.display = 'flex';
+  const asistentes = CONDUCTORES.filter(c => state.attendance[c]);
+  try {
+    await insertViaje(conductor, asistentes, state.dayInfo);
+    showToast(`✓ Cruz registrada para ${conductor}`, 'ok');
+    await reloadData();
+  } catch(err) {
+    showToast('Error al guardar el viaje', 'err');
+    console.error(err);
+    document.getElementById('loadingOverlay').style.display = 'none';
+  }
+}
+
+// ═══════════════════════════════════════════════
+//  RENDER: ESTADÍSTICAS
+// ═══════════════════════════════════════════════
+function renderStats(stats) {
+  const cont = document.getElementById('rankingList');
+  cont.innerHTML = '';
+  if (stats.ranking.every(r => r.cruces === 0)) {
+    cont.innerHTML = '<p style="text-align:center;color:#999;font-size:13px;padding:12px 0">Aún no hay viajes registrados.</p>';
+    return;
+  }
+  const maxCruces = Math.max(1, ...stats.ranking.map(r => r.cruces));
+  const medals    = ['🥇','🥈','🥉'];
+  stats.ranking.forEach((item, i) => {
+    const pct     = Math.round((item.cruces / maxCruces) * 100);
+    const medal   = medals[i] || `${i+1}.`;
+    const esSuger = item.nombre === stats.sugerido;
+    const row     = document.createElement('div');
+    row.className = 'ranking-row';
+    row.innerHTML = `
+      <span class="rank-pos">${medal}</span>
+      <div class="rank-info">
+        <div class="rank-name">${item.nombre}${esSuger ? ' <span class="badge-hoy">HOY</span>' : ''}</div>
+        <div class="rank-bar-wrap"><div class="rank-bar" style="width:${pct}%"></div></div>
+      </div>
+      <span class="rank-count">${item.cruces}</span>
+    `;
+    cont.appendChild(row);
+  });
+}
+
+// ═══════════════════════════════════════════════
+//  RENDER: HISTORIAL
+// ═══════════════════════════════════════════════
+function isoToDisplay(iso) {
+  if (!iso) return '';
+  const [y,m,d] = iso.split('-');
+  return `${d}/${m}/${y}`;
+}
+
+function renderHistory(history) {
+  const cont = document.getElementById('historyList');
+  cont.innerHTML = '';
+  if (!history?.length) {
+    cont.innerHTML = '<p style="text-align:center;color:#999;font-size:13px;padding:12px 0">Aún no hay viajes registrados.</p>';
+    return;
+  }
+  history.forEach(item => {
+    const dayLabel = item.dia_ciclo === 'Histórico' ? 'Histórico' : `Día ${item.dia_ciclo}`;
+    const row      = document.createElement('div');
+    row.className  = 'history-row';
+    row.innerHTML  = `
+      <i class="bi bi-car-front history-icon"></i>
+      <div>
+        <div class="history-cond">${item.conductor}</div>
+        <div class="history-meta">
+          ${isoToDisplay(item.fecha)} · ${dayLabel}
+          ${item.asistentes ? ' · <em>' + item.asistentes + '</em>' : ''}
+        </div>
+      </div>
+    `;
+    cont.appendChild(row);
+  });
+}
+
+// ═══════════════════════════════════════════════
+//  MODAL HISTÓRICO
+// ═══════════════════════════════════════════════
+async function openHistModal() {
+  document.getElementById('loadingOverlay').style.display = 'flex';
+  try {
+    const { data } = await db.from('viajes').select('conductor, cruces')
+      .eq('dia_ciclo', 'Histórico').eq('asistentes', 'Previo a la app');
+
+    const historico = {};
+    CONDUCTORES.forEach(c => { historico[c] = 0; });
+    (data || []).forEach(v => {
+      if (historico.hasOwnProperty(v.conductor)) historico[v.conductor] += (v.cruces || 0);
+    });
+
+    const cont = document.getElementById('histInputs');
+    cont.innerHTML = '';
+    const tieneExistentes = Object.values(historico).some(v => v > 0);
+    document.getElementById('histWarning').style.display = tieneExistentes ? 'block' : 'none';
+
+    CONDUCTORES.forEach(nombre => {
+      const row = document.createElement('div');
+      row.className = 'hist-input-row';
+      row.innerHTML = `
+        <span class="hist-nombre">${nombre}</span>
+        <div style="display:flex;align-items:center;gap:8px">
+          <button class="hist-stepper" onclick="stepHist('${nombre}',-1)">−</button>
+          <input type="number" id="hist_${nombre}" class="hist-input" value="${historico[nombre]||0}" min="0" max="999">
+          <button class="hist-stepper" onclick="stepHist('${nombre}',1)">+</button>
+        </div>
+      `;
+      cont.appendChild(row);
+    });
+
+    document.getElementById('histModalBackdrop').style.display = 'flex';
+  } catch(err) {
+    showToast('Error al cargar datos históricos', 'err');
+  } finally {
+    document.getElementById('loadingOverlay').style.display = 'none';
+  }
+}
+
+function stepHist(nombre, delta) {
+  const input = document.getElementById(`hist_${nombre}`);
+  input.value = Math.max(0, (parseInt(input.value)||0) + delta);
+}
+
+function closeHistModal(evt) {
+  if (!evt || evt.target === document.getElementById('histModalBackdrop'))
+    document.getElementById('histModalBackdrop').style.display = 'none';
+}
+
+async function saveHistData() {
+  const datos = {};
+  CONDUCTORES.forEach(n => { datos[n] = parseInt(document.getElementById(`hist_${n}`).value)||0; });
+
+  document.getElementById('histModalBackdrop').style.display = 'none';
+  document.getElementById('loadingOverlay').style.display = 'flex';
+
+  try {
+    await db.from('viajes').delete().eq('dia_ciclo','Histórico').eq('asistentes','Previo a la app');
+    const rows = CONDUCTORES
+      .filter(n => datos[n] > 0)
+      .map(n => ({ fecha:'2026-04-06', dia_ciclo:'Histórico', conductor:n, asistentes:'Previo a la app', cruces:datos[n] }));
+    if (rows.length) {
+      const { error } = await db.from('viajes').insert(rows);
+      if (error) throw error;
+    }
+    showToast('✓ Datos históricos guardados', 'ok');
+    await reloadData();
+  } catch(err) {
+    showToast('Error al guardar', 'err');
+    console.error(err);
+    document.getElementById('loadingOverlay').style.display = 'none';
+  }
+}
+
+// ═══════════════════════════════════════════════
+//  UTILIDADES
+// ═══════════════════════════════════════════════
+function switchTab(tabId) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.app-nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(tabId).classList.add('active');
+  document.querySelector(`[data-tab="${tabId}"]`).classList.add('active');
+}
+
+let _toastTimer;
+function showToast(msg, type) {
+  const el = document.getElementById('toastMsg');
+  el.textContent = msg;
+  el.className   = `toast-msg show ${type||''}`;
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => el.classList.remove('show'), 3200);
+}
+
+// ── ARRANQUE ──
+init();
+</script>
+
+</body>
+</html>
