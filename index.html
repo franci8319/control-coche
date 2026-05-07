@@ -376,6 +376,9 @@
   <div class="modal-sheet" onclick="event.stopPropagation()" style="max-height:90dvh;overflow-y:auto">
     <div class="modal-sheet-title"><i class="bi bi-pencil-square"></i> Editar viaje</div>
 
+    <label style="font-size:13px;color:#666;font-weight:600;display:block;margin-bottom:6px">Fecha</label>
+    <input type="date" id="editFecha" style="width:100%;padding:10px 12px;border-radius:10px;border:2px solid #DDD;font-size:15px;margin-bottom:14px;color:#333">
+
     <label style="font-size:13px;color:#666;font-weight:600;display:block;margin-bottom:6px">Conductor</label>
     <select id="editConductor" style="width:100%;padding:10px 12px;border-radius:10px;border:2px solid #DDD;font-size:15px;font-weight:600;margin-bottom:14px;color:#333">
       <option>Miguel</option>
@@ -788,6 +791,7 @@ function openEditModal(id) {
   if (!item) return;
   _editingId = id;
 
+  document.getElementById('editFecha').value     = item.fecha;  // ya viene en formato ISO yyyy-mm-dd
   document.getElementById('editConductor').value = item.conductor;
 
   const presentes = (item.asistentes || '').split(',').map(s => s.trim());
@@ -812,13 +816,14 @@ function closeEditModal(evt) {
 }
 
 async function saveEdit() {
+  const fecha      = document.getElementById('editFecha').value;
   const conductor  = document.getElementById('editConductor').value;
   const asistentes = CONDUCTORES.filter(n => document.getElementById(`eAtt_${n}`)?.checked).join(', ');
 
   closeEditModal();
   document.getElementById('loadingOverlay').style.display = 'flex';
   try {
-    const { error } = await db.from('viajes').update({ conductor, asistentes }).eq('id', _editingId);
+    const { error } = await db.from('viajes').update({ fecha, conductor, asistentes }).eq('id', _editingId);
     if (error) throw error;
     showToast('✓ Viaje actualizado', 'ok');
     await reloadData();
