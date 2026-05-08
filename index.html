@@ -250,12 +250,54 @@
       .driver-btn { font-size: 15px; min-height: 78px; }
       .suggestion-name { font-size: 27px; }
     }
+
+    /* ── Password screen ── */
+    .pwd-screen {
+      position: fixed; inset: 0;
+      background: linear-gradient(135deg, var(--azul-dark), var(--azul));
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      z-index: 99999; padding: 24px;
+    }
+    .pwd-logo  { font-size: 56px; margin-bottom: 8px; }
+    .pwd-title { color: #fff; font-size: 22px; font-weight: 800; margin-bottom: 4px; }
+    .pwd-sub   { color: rgba(255,255,255,.7); font-size: 13px; margin-bottom: 28px; text-align: center; }
+    .pwd-card  { background: #fff; border-radius: 20px; padding: 24px 20px; width: 100%; max-width: 340px; }
+    .pwd-label { font-size: 13px; font-weight: 600; color: #555; margin-bottom: 8px; display: block; }
+    .pwd-input {
+      width: 100%; padding: 13px 14px; border-radius: 12px;
+      border: 2px solid #DDD; font-size: 17px; letter-spacing: 3px;
+      color: #333; margin-bottom: 6px; box-sizing: border-box;
+    }
+    .pwd-input:focus { border-color: var(--azul); outline: none; }
+    .pwd-error { font-size: 12px; color: #C62828; margin-bottom: 10px; min-height: 16px; }
+    .pwd-btn {
+      width: 100%; padding: 14px; border-radius: 12px;
+      background: var(--azul); color: #fff;
+      font-size: 16px; font-weight: 700; border: none; cursor: pointer;
+    }
+    .pwd-btn:active { opacity: .85; }
   </style>
 </head>
 <body>
 
 <!-- LOADING -->
-<div id="loadingOverlay" class="loading-overlay">
+<!-- PASSWORD SCREEN -->
+<div id="pwdScreen" class="pwd-screen">
+  <div class="pwd-logo">🚗</div>
+  <div class="pwd-title">Control de Coche</div>
+  <div class="pwd-sub">Introduce la contraseña para acceder</div>
+  <div class="pwd-card">
+    <label class="pwd-label" for="pwdInput">Contraseña</label>
+    <input type="password" id="pwdInput" class="pwd-input" placeholder="••••••••"
+           onkeydown="if(event.key==='Enter') checkPassword()">
+    <div id="pwdError" class="pwd-error"></div>
+    <button class="pwd-btn" onclick="checkPassword()">Entrar</button>
+  </div>
+</div>
+
+<!-- LOADING -->
+<div id="loadingOverlay" class="loading-overlay" style="display:none">
   <div class="spinner"></div>
   <p>Cargando datos…</p>
 </div>
@@ -418,6 +460,36 @@ const DIAS_SEMANA  = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes'
 const MESES        = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
 
 // ═══════════════════════════════════════════════
+//  ACCESO
+// ═══════════════════════════════════════════════
+let accessLevel = null; // 'viewer' | 'editor'
+
+function checkPassword() {
+  const val = document.getElementById('pwdInput').value;
+  if (val === 'cunda1234') {
+    accessLevel = 'editor';
+  } else if (val === 'cunda') {
+    accessLevel = 'viewer';
+  } else {
+    document.getElementById('pwdError').textContent = 'Contraseña incorrecta';
+    document.getElementById('pwdInput').value = '';
+    document.getElementById('pwdInput').focus();
+    return;
+  }
+  document.getElementById('pwdScreen').style.display = 'none';
+  document.getElementById('loadingOverlay').style.display = 'flex';
+  init();
+}
+
+function applyAccessLevel() {
+  if (accessLevel === 'viewer') {
+    document.querySelector('[data-tab="tabRegistro"]').style.display = 'none';
+    document.querySelector('.hist-link-btn').style.display = 'none';
+    switchTab('tabStats');
+  }
+}
+
+// ═══════════════════════════════════════════════
 //  ESTADO
 // ═══════════════════════════════════════════════
 let state = { dayInfo: null, stats: null, attendance: {} };
@@ -541,6 +613,7 @@ async function init() {
     renderHistory(stats.history);
     updateDriverCruces();
     updateSuggestion();
+    applyAccessLevel();
   } catch (err) {
     console.error(err);
     showToast('Error al conectar con la base de datos', 'err');
@@ -768,6 +841,7 @@ function renderHistory(history) {
           ${item.asistentes ? ' · <em>' + item.asistentes + '</em>' : ''}
         </div>
       </div>
+      ${accessLevel === 'editor' ? `
       <div class="history-actions">
         <button class="action-btn edit" onclick="openEditModal(${item.id})" title="Editar">
           <i class="bi bi-pencil"></i>
@@ -775,7 +849,7 @@ function renderHistory(history) {
         <button class="action-btn del" onclick="confirmDelete(${item.id})" title="Eliminar">
           <i class="bi bi-trash"></i>
         </button>
-      </div>
+      </div>` : ''}
     `;
     cont.appendChild(row);
   });
@@ -959,7 +1033,7 @@ function showToast(msg, type) {
 }
 
 // ── ARRANQUE ──
-init();
+document.getElementById('pwdInput').focus();
 </script>
 
 </body>
