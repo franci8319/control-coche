@@ -294,6 +294,14 @@
     .cq-date  { color: #7A9BC4; font-size: 8px; font-weight: 600; display: block; margin-top: 2px; }
     .cq-table tr:last-child .cq-cell,
     .cq-table tr:last-child .cq-td-name { border-bottom: none; }
+    .cq-block-sep   { border-top: 2px solid #EEF2F7; margin-top: 4px; }
+    .cq-block-header {
+      font-size: 11px; font-weight: 600; color: #999;
+      text-transform: uppercase; letter-spacing: .5px;
+      padding: 10px 16px 6px;
+      display: flex; align-items: center; gap: 7px;
+    }
+    .cq-block-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--azul); flex-shrink: 0; }
 
     /* ── Password screen ── */
     .pwd-screen {
@@ -879,28 +887,59 @@ function renderCuadrante(viajes) {
     return;
   }
 
-  let html = '<table class="cq-table"><thead><tr>';
-  html += '<th class="cq-th-name">Conductor</th>';
-  trips.forEach((v, i) => {
-    const [y,m,d] = v.fecha.split('-');
-    html += `<th class="cq-th-trip">${i+1}<span>${d}/${m}</span></th>`;
-  });
-  html += '</tr></thead><tbody>';
+  // Los 4 grupos posibles según quién va en el coche ese día
+  const GRUPOS = [
+    { key: 'Miguel,Boro,Francis,Plácido', members: ['Miguel','Boro','Francis','Plácido'] },
+    { key: 'Miguel,Francis,Plácido',       members: ['Miguel','Francis','Plácido'] },
+    { key: 'Miguel,Boro,Plácido',          members: ['Miguel','Boro','Plácido'] },
+    { key: 'Miguel,Boro,Francis',          members: ['Miguel','Boro','Francis'] },
+  ];
 
-  CONDUCTORES.forEach(nombre => {
-    html += `<tr><td class="cq-td-name">${nombre}</td>`;
-    trips.forEach(v => {
-      if (v.conductor === nombre) {
-        const [y,m,d] = v.fecha.split('-');
-        html += `<td class="cq-cell hit"><i class="bi bi-check-lg cq-check"></i><span class="cq-date">${d}/${m}</span></td>`;
-      } else {
-        html += `<td class="cq-cell"></td>`;
-      }
+  function tripKey(trip) {
+    return (trip.asistentes || '').split(',').map(s => s.trim())
+      .filter(a => CONDUCTORES.includes(a))
+      .sort((a, b) => CONDUCTORES.indexOf(a) - CONDUCTORES.indexOf(b))
+      .join(',');
+  }
+
+  const grouped = {};
+  GRUPOS.forEach(g => { grouped[g.key] = []; });
+  trips.forEach(trip => {
+    const k = tripKey(trip);
+    if (grouped.hasOwnProperty(k)) grouped[k].push(trip);
+  });
+
+  let html = '';
+  let blockIdx = 0;
+
+  GRUPOS.forEach(grupo => {
+    const groupTrips = grouped[grupo.key];
+    if (!groupTrips.length) return;
+    const sep = blockIdx > 0 ? ' cq-block-sep' : '';
+    html += `<div class="cq-block${sep}">`;
+    html += `<div class="cq-block-header"><span class="cq-block-dot"></span>${grupo.members.join(' · ')}</div>`;
+    html += `<div class="cuadrante-scroll"><table class="cq-table"><thead><tr><th class="cq-th-name"></th>`;
+    groupTrips.forEach((v, i) => {
+      const [,m,d] = v.fecha.split('-');
+      html += `<th class="cq-th-trip">${i+1}<span>${d}/${m}</span></th>`;
     });
-    html += '</tr>';
+    html += `</tr></thead><tbody>`;
+    grupo.members.forEach(nombre => {
+      html += `<tr><td class="cq-td-name">${nombre}</td>`;
+      groupTrips.forEach(v => {
+        if (v.conductor === nombre) {
+          const [,m,d] = v.fecha.split('-');
+          html += `<td class="cq-cell hit"><i class="bi bi-check-lg cq-check"></i><span class="cq-date">${d}/${m}</span></td>`;
+        } else {
+          html += `<td class="cq-cell"></td>`;
+        }
+      });
+      html += `</tr>`;
+    });
+    html += `</tbody></table></div></div>`;
+    blockIdx++;
   });
 
-  html += '</tbody></table>';
   cont.innerHTML = html;
 }
 
