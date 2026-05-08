@@ -251,6 +251,50 @@
       .suggestion-name { font-size: 27px; }
     }
 
+    /* ── Cuadrante ── */
+    .cuadrante-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; border-radius: 10px; }
+    .cq-table { border-collapse: collapse; }
+    .cq-th-name {
+      position: sticky; left: 0; z-index: 3;
+      background: var(--azul); color: #fff;
+      font-size: 11px; font-weight: 700; letter-spacing: .4px;
+      padding: 8px 14px; text-align: left; white-space: nowrap;
+      border-right: 2px solid rgba(255,255,255,.2);
+    }
+    .cq-th-trip {
+      background: #F0F4F8; color: #666;
+      font-size: 10px; font-weight: 600;
+      padding: 5px 4px; text-align: center;
+      min-width: 38px; max-width: 38px; width: 38px;
+      border-right: 1px solid #E8ECF0; border-bottom: 2px solid #DDE3EA;
+      line-height: 1.3;
+    }
+    .cq-th-trip span { display: block; color: #AAB4BE; font-size: 9px; font-weight: 500; }
+    .cq-td-name {
+      position: sticky; left: 0; z-index: 2;
+      background: #fff; border-right: 2px solid #E8ECF0;
+      font-size: 13px; font-weight: 700; color: #333;
+      padding: 0 14px; white-space: nowrap;
+      border-bottom: 1px solid #F0F4F8; height: 48px;
+    }
+    .cq-td-name:after {
+      content: ''; position: absolute; right: 0; top: 0; bottom: 0;
+      width: 4px; background: var(--azul); opacity: .18;
+    }
+    .cq-td-name { position: sticky; left: 0; }
+    .cq-cell {
+      width: 38px; min-width: 38px; max-width: 38px; height: 48px;
+      text-align: center; vertical-align: middle;
+      border-right: 1px solid #F0F4F8; border-bottom: 1px solid #F0F4F8;
+    }
+    .cq-cell.hit {
+      background: #E8F1FC;
+    }
+    .cq-check { color: var(--azul); font-size: 17px; display: block; line-height: 1; }
+    .cq-date  { color: #7A9BC4; font-size: 8px; font-weight: 600; display: block; margin-top: 2px; }
+    .cq-table tr:last-child .cq-cell,
+    .cq-table tr:last-child .cq-td-name { border-bottom: none; }
+
     /* ── Password screen ── */
     .pwd-screen {
       position: fixed; inset: 0;
@@ -328,6 +372,9 @@
   <button class="app-nav-btn" data-tab="tabHistorial" onclick="switchTab('tabHistorial')">
     <i class="bi bi-clock-history"></i>Historial
   </button>
+  <button class="app-nav-btn" data-tab="tabCuadrante" onclick="switchTab('tabCuadrante')">
+    <i class="bi bi-grid-3x3-gap-fill"></i>Cuadrante
+  </button>
 </nav>
 
 <!-- TAB: REGISTRO -->
@@ -375,6 +422,14 @@
   <div class="card">
     <div class="card-title"><i class="bi bi-clock-history"></i> Últimos 10 viajes</div>
     <div id="historyList"></div>
+  </div>
+</div>
+
+<!-- TAB: CUADRANTE -->
+<div id="tabCuadrante" class="tab-panel">
+  <div class="card" style="padding:14px 0 0">
+    <div class="card-title" style="padding:0 16px 10px"><i class="bi bi-grid-3x3-gap-fill"></i> Cuadrante de viajes</div>
+    <div id="cuadranteContent" class="cuadrante-scroll"></div>
   </div>
 </div>
 
@@ -611,6 +666,7 @@ async function init() {
 
     renderStats(stats);
     renderHistory(stats.history);
+    renderCuadrante(viajes);
     updateDriverCruces();
     updateSuggestion();
     applyAccessLevel();
@@ -630,6 +686,7 @@ async function reloadData() {
     state.stats  = stats;
     renderStats(stats);
     renderHistory(stats.history);
+    renderCuadrante(viajes);
     updateDriverCruces();
     updateSuggestion();
   } catch (err) {
@@ -804,6 +861,47 @@ function renderStats(stats) {
     `;
     cont.appendChild(row);
   });
+}
+
+// ═══════════════════════════════════════════════
+//  RENDER: CUADRANTE
+// ═══════════════════════════════════════════════
+function renderCuadrante(viajes) {
+  const cont = document.getElementById('cuadranteContent');
+  cont.innerHTML = '';
+
+  const trips = viajes
+    .filter(v => v.asistentes !== 'Previo a la app')
+    .sort((a, b) => a.fecha.localeCompare(b.fecha) || (a.created_at||'').localeCompare(b.created_at||''));
+
+  if (!trips.length) {
+    cont.innerHTML = '<p style="text-align:center;color:#999;font-size:13px;padding:16px">Aún no hay viajes registrados.</p>';
+    return;
+  }
+
+  let html = '<table class="cq-table"><thead><tr>';
+  html += '<th class="cq-th-name">Conductor</th>';
+  trips.forEach((v, i) => {
+    const [y,m,d] = v.fecha.split('-');
+    html += `<th class="cq-th-trip">${i+1}<span>${d}/${m}</span></th>`;
+  });
+  html += '</tr></thead><tbody>';
+
+  CONDUCTORES.forEach(nombre => {
+    html += `<tr><td class="cq-td-name">${nombre}</td>`;
+    trips.forEach(v => {
+      if (v.conductor === nombre) {
+        const [y,m,d] = v.fecha.split('-');
+        html += `<td class="cq-cell hit"><i class="bi bi-check-lg cq-check"></i><span class="cq-date">${d}/${m}</span></td>`;
+      } else {
+        html += `<td class="cq-cell"></td>`;
+      }
+    });
+    html += '</tr>';
+  });
+
+  html += '</tbody></table>';
+  cont.innerHTML = html;
 }
 
 // ═══════════════════════════════════════════════
