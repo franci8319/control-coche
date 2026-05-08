@@ -896,8 +896,9 @@ function renderCuadrante(viajes) {
   ];
 
   function tripKey(trip) {
-    return (trip.asistentes || '').split(',').map(s => s.trim())
-      .filter(a => CONDUCTORES.includes(a))
+    const todos = [trip.conductor, ...(trip.asistentes || '').split(',').map(s => s.trim())]
+      .filter(a => CONDUCTORES.includes(a));
+    return [...new Set(todos)]
       .sort((a, b) => CONDUCTORES.indexOf(a) - CONDUCTORES.indexOf(b))
       .join(',');
   }
