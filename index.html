@@ -302,6 +302,7 @@
       display: flex; align-items: center; gap: 7px;
     }
     .cq-block-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--azul); flex-shrink: 0; }
+    .cq-count { font-size: 11px; font-weight: 600; color: var(--azul); margin-left: 4px; }
 
     /* ── Password screen ── */
     .pwd-screen {
@@ -374,14 +375,11 @@
   <button class="app-nav-btn active" data-tab="tabRegistro" onclick="switchTab('tabRegistro')">
     <i class="bi bi-plus-circle-fill"></i>Registro
   </button>
-  <button class="app-nav-btn" data-tab="tabStats" onclick="switchTab('tabStats')">
-    <i class="bi bi-bar-chart-fill"></i>Estadísticas
+  <button class="app-nav-btn" data-tab="tabCuadrante" onclick="switchTab('tabCuadrante')">
+    <i class="bi bi-grid-3x3-gap-fill"></i>Cuadrante
   </button>
   <button class="app-nav-btn" data-tab="tabHistorial" onclick="switchTab('tabHistorial')">
     <i class="bi bi-clock-history"></i>Historial
-  </button>
-  <button class="app-nav-btn" data-tab="tabCuadrante" onclick="switchTab('tabCuadrante')">
-    <i class="bi bi-grid-3x3-gap-fill"></i>Cuadrante
   </button>
 </nav>
 
@@ -391,8 +389,8 @@
     <div class="rest-emoji">😴</div>
     <div class="rest-title">Día de Descanso</div>
     <div class="rest-sub">No hay turno hoy. ¡A descansar!</div>
-    <button style="margin-top:20px;padding:10px 24px;border-radius:12px;border:2px solid #CCC;background:none;font-size:14px;cursor:pointer" onclick="switchTab('tabStats')">
-      Ver Estadísticas
+    <button style="margin-top:20px;padding:10px 24px;border-radius:12px;border:2px solid #CCC;background:none;font-size:14px;cursor:pointer" onclick="switchTab('tabCuadrante')">
+      Ver Cuadrante
     </button>
   </div>
   <div id="workScreen">
@@ -412,16 +410,11 @@
   </div>
 </div>
 
-<!-- TAB: ESTADÍSTICAS -->
-<div id="tabStats" class="tab-panel">
-  <div class="card">
-    <div class="card-title"><i class="bi bi-trophy-fill" style="color:#FFB300"></i> Ranking de Cruces</div>
-    <div id="rankingList"></div>
-  </div>
-  <div style="text-align:center;padding:4px 0 8px">
-    <button class="hist-link-btn" onclick="openHistModal()">
-      <i class="bi bi-pencil-square"></i> Editar datos previos a la app
-    </button>
+<!-- TAB: CUADRANTE -->
+<div id="tabCuadrante" class="tab-panel">
+  <div class="card" style="padding:14px 0 0">
+    <div class="card-title" style="padding:0 16px 10px"><i class="bi bi-grid-3x3-gap-fill"></i> Cuadrante de viajes</div>
+    <div id="cuadranteContent" class="cuadrante-scroll"></div>
   </div>
 </div>
 
@@ -431,13 +424,10 @@
     <div class="card-title"><i class="bi bi-clock-history"></i> Últimos 10 viajes</div>
     <div id="historyList"></div>
   </div>
-</div>
-
-<!-- TAB: CUADRANTE -->
-<div id="tabCuadrante" class="tab-panel">
-  <div class="card" style="padding:14px 0 0">
-    <div class="card-title" style="padding:0 16px 10px"><i class="bi bi-grid-3x3-gap-fill"></i> Cuadrante de viajes</div>
-    <div id="cuadranteContent" class="cuadrante-scroll"></div>
+  <div style="text-align:center;padding:4px 0 8px">
+    <button class="hist-link-btn" onclick="openHistModal()">
+      <i class="bi bi-pencil-square"></i> Editar datos previos a la app
+    </button>
   </div>
 </div>
 
@@ -548,7 +538,7 @@ function applyAccessLevel() {
   if (accessLevel === 'viewer') {
     document.querySelector('[data-tab="tabRegistro"]').style.display = 'none';
     document.querySelector('.hist-link-btn').style.display = 'none';
-    switchTab('tabStats');
+    switchTab('tabCuadrante');
   }
 }
 
@@ -672,7 +662,6 @@ async function init() {
     const stats  = computeStats(viajes, dayInfo);
     state.stats  = stats;
 
-    renderStats(stats);
     renderHistory(stats.history);
     renderCuadrante(viajes);
     updateDriverCruces();
@@ -692,7 +681,6 @@ async function reloadData() {
     const viajes = await loadViajes();
     const stats  = computeStats(viajes, state.dayInfo);
     state.stats  = stats;
-    renderStats(stats);
     renderHistory(stats.history);
     renderCuadrante(viajes);
     updateDriverCruces();
@@ -926,7 +914,8 @@ function renderCuadrante(viajes) {
     });
     html += `</tr></thead><tbody>`;
     grupo.members.forEach(nombre => {
-      html += `<tr><td class="cq-td-name">${nombre}</td>`;
+      const count = groupTrips.filter(v => v.conductor === nombre).length;
+      html += `<tr><td class="cq-td-name">${nombre}${count > 0 ? `<span class="cq-count">(${count})</span>` : ''}</td>`;
       groupTrips.forEach(v => {
         if (v.conductor === nombre) {
           const [,m,d] = v.fecha.split('-');
