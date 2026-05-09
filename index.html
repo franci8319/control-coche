@@ -397,14 +397,14 @@
     <div id="suggCard" class="suggestion-card" style="display:none">
       <div class="suggestion-label"><i class="bi bi-lightbulb-fill me-1"></i>Sugerencia de hoy</div>
       <div id="suggName" class="suggestion-name">—</div>
-      <div class="suggestion-sub">Tiene menos cruces acumuladas</div>
+      <div class="suggestion-sub">Tiene menos viajes acumulados en este grupo</div>
     </div>
     <div class="card">
       <div class="card-title"><i class="bi bi-people-fill"></i> ¿Quién ha venido hoy?</div>
       <div id="attList"></div>
     </div>
     <div class="card">
-      <div class="card-title"><i class="bi bi-hand-index-thumb-fill"></i> Registrar viaje (+1 cruz)</div>
+      <div class="card-title"><i class="bi bi-hand-index-thumb-fill"></i> Registrar viaje (+1 viaje)</div>
       <div id="driverGrid" class="driver-grid"></div>
     </div>
   </div>
@@ -661,6 +661,7 @@ async function init() {
     const viajes = await loadViajes();
     const stats  = computeStats(viajes, dayInfo);
     state.stats  = stats;
+    state.viajes = viajes;
 
     renderHistory(stats.history);
     renderCuadrante(viajes);
@@ -681,6 +682,7 @@ async function reloadData() {
     const viajes = await loadViajes();
     const stats  = computeStats(viajes, state.dayInfo);
     state.stats  = stats;
+    state.viajes = viajes;
     renderHistory(stats.history);
     renderCuadrante(viajes);
     updateDriverCruces();
@@ -773,13 +775,13 @@ function updateDriverCruces() {
   if (!state.stats) return;
   state.stats.ranking.forEach(item => {
     const el = document.getElementById(`cru_${item.nombre}`);
-    if (el) el.textContent = `${item.cruces} ${item.cruces === 1 ? 'cruz' : 'cruces'}`;
+    if (el) el.textContent = `${item.cruces} ${item.cruces === 1 ? 'viaje' : 'viajes'}`;
   });
   updateSuggestion();
 }
 
 function updateSuggestion() {
-  if (!state.stats || !state.dayInfo?.esLaboral) return;
+  if (!state.dayInfo?.esLaboral) return;
   CONDUCTORES.forEach(n => {
     const b = document.getElementById(`dBtn_${n}`);
     if (b) b.classList.remove('suggested');
@@ -787,9 +789,28 @@ function updateSuggestion() {
   const presentes = state.dayInfo.conductoresHoy.filter(n => state.attendance[n]);
   if (!presentes.length) { document.getElementById('suggCard').style.display = 'none'; return; }
 
-  const rankMap = {};
-  state.stats.ranking.forEach(r => { rankMap[r.nombre] = r.cruces; });
-  const sugerido = [...presentes].sort((a,b) => (rankMap[a]||0) - (rankMap[b]||0))[0];
+  // Clave del grupo actual según quién ha venido
+  const grupoKey = [...presentes]
+    .sort((a, b) => CONDUCTORES.indexOf(a) - CONDUCTORES.indexOf(b))
+    .join(',');
+
+  // Contar viajes de cada presente dentro de su bloque
+  const counts = {};
+  presentes.forEach(n => { counts[n] = 0; });
+  if (state.viajes) {
+    state.viajes
+      .filter(v => v.asistentes !== 'Previo a la app')
+      .forEach(v => {
+        const todos = [v.conductor, ...(v.asistentes || '').split(',').map(s => s.trim())]
+          .filter(a => CONDUCTORES.includes(a));
+        const key = [...new Set(todos)]
+          .sort((a, b) => CONDUCTORES.indexOf(a) - CONDUCTORES.indexOf(b))
+          .join(',');
+        if (key === grupoKey && counts.hasOwnProperty(v.conductor)) counts[v.conductor]++;
+      });
+  }
+
+  const sugerido = [...presentes].sort((a, b) => counts[a] - counts[b])[0];
 
   document.getElementById('suggCard').style.display = 'block';
   document.getElementById('suggName').textContent   = sugerido.toUpperCase();
@@ -804,8 +825,8 @@ function onDriverClick(nombre) {
   const cruces  = state.stats?.cruces?.[nombre] ?? 0;
   const despues = cruces + 1;
   document.getElementById('modalText').innerHTML =
-    `¿Registrar <strong>1 cruz</strong> para <strong>${nombre}</strong>?<br>` +
-    `<small style="color:#888">Acumulado: ${despues} ${despues===1?'cruz':'cruces'}</small>`;
+    `¿Registrar <strong>1 viaje</strong> para <strong>${nombre}</strong>?<br>` +
+    `<small style="color:#888">Acumulado: ${despues} ${despues===1?'viaje':'viajes'}</small>`;
   document.getElementById('modalConfirmBtn').onclick = () => { closeModal(); doRegister(nombre); };
   document.getElementById('modalBackdrop').style.display = 'flex';
 }
@@ -820,7 +841,7 @@ async function doRegister(conductor) {
   const asistentes = CONDUCTORES.filter(c => state.attendance[c]);
   try {
     await insertViaje(conductor, asistentes, state.dayInfo);
-    showToast(`✓ Cruz registrada para ${conductor}`, 'ok');
+    showToast(`✓ Viaje registrado para ${conductor}`, 'ok');
     await reloadData();
   } catch(err) {
     showToast('Error al guardar el viaje', 'err');
