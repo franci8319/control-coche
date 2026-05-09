@@ -773,7 +773,7 @@ function renderDriverButtons(d) {
 
 function updateDriverCruces() {
   if (!state.dayInfo?.esLaboral) return;
-  const presentes = state.dayInfo.conductoresHoy.filter(n => state.attendance[n]);
+  const presentes = CONDUCTORES.filter(n => state.attendance[n]);
   const grupoKey  = [...presentes]
     .sort((a, b) => CONDUCTORES.indexOf(a) - CONDUCTORES.indexOf(b))
     .join(',');
@@ -809,7 +809,7 @@ function updateSuggestion() {
     const b = document.getElementById(`dBtn_${n}`);
     if (b) b.classList.remove('suggested');
   });
-  const presentes = state.dayInfo.conductoresHoy.filter(n => state.attendance[n]);
+  const presentes = CONDUCTORES.filter(n => state.attendance[n]);
   if (!presentes.length) { document.getElementById('suggCard').style.display = 'none'; return; }
 
   // Clave del grupo actual según quién ha venido
