@@ -748,7 +748,7 @@ function onAttChange(nombre, presente) {
   state.attendance[nombre] = presente;
   const btn = document.getElementById(`dBtn_${nombre}`);
   if (btn) btn.disabled = !presente;
-  updateSuggestion();
+  updateDriverCruces();
 }
 
 function renderDriverButtons(d) {
@@ -772,10 +772,33 @@ function renderDriverButtons(d) {
 }
 
 function updateDriverCruces() {
-  if (!state.stats) return;
-  state.stats.ranking.forEach(item => {
-    const el = document.getElementById(`cru_${item.nombre}`);
-    if (el) el.textContent = `${item.cruces} ${item.cruces === 1 ? 'viaje' : 'viajes'}`;
+  if (!state.dayInfo?.esLaboral) return;
+  const presentes = state.dayInfo.conductoresHoy.filter(n => state.attendance[n]);
+  const grupoKey  = [...presentes]
+    .sort((a, b) => CONDUCTORES.indexOf(a) - CONDUCTORES.indexOf(b))
+    .join(',');
+
+  const counts = {};
+  CONDUCTORES.forEach(n => { counts[n] = 0; });
+  if (state.viajes) {
+    state.viajes
+      .filter(v => v.asistentes !== 'Previo a la app')
+      .forEach(v => {
+        const todos = [v.conductor, ...(v.asistentes || '').split(',').map(s => s.trim())]
+          .filter(a => CONDUCTORES.includes(a));
+        const key = [...new Set(todos)]
+          .sort((a, b) => CONDUCTORES.indexOf(a) - CONDUCTORES.indexOf(b))
+          .join(',');
+        if (key === grupoKey && counts.hasOwnProperty(v.conductor)) counts[v.conductor]++;
+      });
+  }
+
+  CONDUCTORES.forEach(nombre => {
+    const el = document.getElementById(`cru_${nombre}`);
+    if (el) {
+      const c = counts[nombre];
+      el.textContent = `${c} ${c === 1 ? 'viaje' : 'viajes'}`;
+    }
   });
   updateSuggestion();
 }
