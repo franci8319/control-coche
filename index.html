@@ -330,6 +330,11 @@
       font-size: 16px; font-weight: 700; border: none; cursor: pointer;
     }
     .pwd-btn:active { opacity: .85; }
+    .pwd-quote {
+      margin-top: 20px; font-size: 12px; font-style: italic;
+      color: rgba(255,255,255,.6); text-align: center;
+      line-height: 1.5; max-width: 320px; padding: 0 8px;
+    }
   </style>
 </head>
 <body>
@@ -347,6 +352,7 @@
     <div id="pwdError" class="pwd-error"></div>
     <button class="pwd-btn" onclick="checkPassword()">Entrar</button>
   </div>
+  <p id="pwdQuote" class="pwd-quote"></p>
 </div>
 
 <!-- LOADING -->
@@ -1204,6 +1210,35 @@ function showToast(msg, type) {
 }
 
 // ── ARRANQUE ──
+const _FRASES = [
+  "Viajar con compañeros de trabajo es como un reality: nadie quiere estar ahí, pero todos cobran por aguantar.",
+  "El coche compartido no reduce emisiones… aumenta los antecedentes psicológicos.",
+  "Hacemos tantos kilómetros juntos que ya discutimos como matrimonio con hipoteca.",
+  "El verdadero trabajo en equipo es sobrevivir al compañero que mastica chicle como una hormigonera.",
+  "Salir a las 6 de la mañana con compañeros de trabajo debería cotizar como deporte de riesgo.",
+  "Compartimos coche para ahorrar gasolina y perder salud mental.",
+  "La ruta al trabajo dura 40 minutos… y la recuperación emocional, dos días.",
+  "Hay silencios incómodos en el coche que ni en un funeral con barra libre.",
+  "El GPS ya no dice 'gire a la derecha', ahora dice 'ánimo, queda poco'.",
+  "Viajar juntos al trabajo crea vínculos… normalmente de odio mutuo.",
+  "Lo peor no es madrugar; es escuchar el mismo chiste malo todos los días durante 80 kilómetros.",
+  "El coche de empresa no tiene airbag emocional.",
+  "Entre peajes, café y terapia, sale más barato teletrabajar.",
+  "Nos conocemos tan bien en los viajes que ya distinguimos quién suspira por sueño y quién por depresión laboral.",
+  "Ir a trabajar en grupo es precioso… si le gustan las sectas.",
+  "Compartir coche con compañeros fortalece la paciencia. O las ganas de empujar a alguien en una gasolinera.",
+  "Hay personas que encuentran amigos en el trabajo; yo encontré rehenes de carretera.",
+  "El trayecto al trabajo es tan largo que el copiloto ya pregunta: '¿hemos llegado a la jubilación?'",
+  "En el coche todos prometen dimitir. Luego llega nómina y milagrosamente se curan.",
+  "La convivencia laboral extrema empieza cuando sabes quién se ha tirado el pedo sin mirar.",
+  "Camino a prisión… y todavía no sabemos quién cumple condena.",
+  "Vamos a la cárcel a trabajar, pero las caras del coche dicen otra cosa.",
+  "Entre funcionarios ya distinguimos el cansancio del trauma.",
+  "El trayecto a prisión es nuestra última hora de libertad.",
+  "Compartir coche en prisiones crea amistad… o cómplices."
+];
+document.getElementById('pwdQuote').textContent =
+  '"' + _FRASES[Math.floor(Math.random() * _FRASES.length)] + '"';
 document.getElementById('pwdInput').focus();
 </script>
 
